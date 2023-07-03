@@ -37,14 +37,15 @@ use crate::{
 
 #[cfg(feature = "host-sandbox")]
 use self::wasmer_backend::{
-	get_global as wasmer_get_global, instantiate as wasmer_instantiate, invoke as wasmer_invoke,
-	new_memory as wasmer_new_memory, set_global_i64 as wasmer_set_global_i64,
-	Backend as WasmerBackend, MemoryWrapper as WasmerMemoryWrapper,
+	get_global as wasmer_get_global, get_global_i64 as wasmer_get_global_i64,
+	instantiate as wasmer_instantiate, invoke as wasmer_invoke, new_memory as wasmer_new_memory,
+	set_global_i64 as wasmer_set_global_i64, Backend as WasmerBackend,
+	MemoryWrapper as WasmerMemoryWrapper,
 };
 use self::wasmi_backend::{
-	get_global as wasmi_get_global, instantiate as wasmi_instantiate, invoke as wasmi_invoke,
-	new_memory as wasmi_new_memory, set_global as wasmi_set_global,
-	MemoryWrapper as WasmiMemoryWrapper,
+	get_global as wasmi_get_global, get_global_i64 as wasmi_get_global_i64,
+	instantiate as wasmi_instantiate, invoke as wasmi_invoke, new_memory as wasmi_new_memory,
+	set_global as wasmi_set_global, MemoryWrapper as WasmiMemoryWrapper,
 };
 
 /// Index of a function inside the supervisor.
@@ -193,12 +194,14 @@ impl SandboxInstance {
 		sandbox_context: &mut dyn SandboxContext,
 	) -> std::result::Result<Option<sp_wasm_interface::Value>, error::Error> {
 		match &self.backend_instance {
-			BackendInstance::Wasmi(wasmi_instance) =>
-				wasmi_invoke(self, wasmi_instance, export_name, args, sandbox_context),
+			BackendInstance::Wasmi(wasmi_instance) => {
+				wasmi_invoke(self, wasmi_instance, export_name, args, sandbox_context)
+			},
 
 			#[cfg(feature = "host-sandbox")]
-			BackendInstance::Wasmer(wasmer_instance) =>
-				wasmer_invoke(wasmer_instance, export_name, args, sandbox_context),
+			BackendInstance::Wasmer(wasmer_instance) => {
+				wasmer_invoke(wasmer_instance, export_name, args, sandbox_context)
+			},
 		}
 	}
 
@@ -211,6 +214,15 @@ impl SandboxInstance {
 
 			#[cfg(feature = "host-sandbox")]
 			BackendInstance::Wasmer(wasmer_instance) => wasmer_get_global(wasmer_instance, name),
+		}
+	}
+
+	pub fn get_global_i64(&self, name: &str) -> Option<i64> {
+		match &self.backend_instance {
+			BackendInstance::Wasmi(wasmi_instance) => wasmi_get_global_i64(wasmi_instance, name),
+
+			#[cfg(feature = "host-sandbox")]
+			BackendInstance::Wasmer(wasmer_instance) => wasmer_get_global_i64(wasmer_instance, name),
 		}
 	}
 
